@@ -8,7 +8,7 @@ RESTful API generator for Express apps using [Bookshelf.js](http://bookshelfjs.o
 
 ## Credit
 
-Build with support of [Flip](https://flip.lease).
+Built with support of [Flip](https://flip.lease).
 
 ## License
 
