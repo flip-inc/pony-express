@@ -4,7 +4,8 @@
   "description": "RESTful API generator for Express and Bookshelf.js",
   "main": "src/index.js",
   "scripts": {
-    "test": "node test"
+    "build": "babel src --out-dir dist --copy-files --presets es2015",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
