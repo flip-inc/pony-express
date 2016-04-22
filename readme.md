@@ -4,7 +4,7 @@ RESTful API generator for Express apps using [Bookshelf.js](http://bookshelfjs.o
 
 ## Documentation Coming Soon
 
-**Currently in active development and not yet at it's first stable release. Check back soon!**
+**Currently in active development and not yet at its first stable release. Check back soon!**
 
 ## Credit
 
