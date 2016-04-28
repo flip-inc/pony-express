@@ -102,7 +102,7 @@ class Resource {
     if (utils.isString(this.orderBy)) this.orderBy = [this.orderBy, 'DESC'];
     if (!utils.isString(this.fields) && !Array.isArray(this.fields)) {
       this.fields = Object.keys(this.fields).reduce((fields, field) => {
-        fields[field] = Object.assign({ hidden: false, readOnly: false, required: false, related: false, full: false, pivotAttrs: false }, this.fields[field]);
+        fields[field] = Object.assign({ hidden: false, readOnly: false, required: false, related: false, full: false, pivotAttrs: false, virtual: false }, this.fields[field]);
         return fields;
       }, {});
     }
@@ -330,7 +330,7 @@ class Resource {
       });
     } else {
       for (let fieldName of Object.keys(bodyCopy)) {
-        if (this.fields.hasOwnProperty(fieldName) && !this.fields[fieldName].readOnly) filtered[fieldName] = bodyCopy[fieldName];
+        if (this.fields.hasOwnProperty(fieldName) && (!this.fields[fieldName].readOnly && !this.fields[fieldName].virtual)) filtered[fieldName] = bodyCopy[fieldName];
       }
     }
 
@@ -472,7 +472,7 @@ class Resource {
     }).then((count) => {
       this.bundle.meta = {};
       this.bundle.meta.results = this.bundle.objects.length;
-      this.bundle.meta.total = parseInt(count);
+      this.bundle.meta.totalResults = parseInt(count);
       this.bundle.meta.limit = this.bundle.query.limit || this.limit;
       this.bundle.meta.offset = this.bundle.query.offset || this.offset;
     }).catch((err) => {
@@ -649,7 +649,7 @@ class Resource {
 
           // if it's a related field and we fetched it (i.e. it's in attrs)
           if (fieldOpts.related && attrs.hasOwnProperty(field)) {
-            resourceName = utils.isString(fieldOpts.resource) ? fieldOpts.resource : false;
+            resourceName = utils.isString(fieldOpts.related) ? fieldOpts.related : false;
 
             // if it's a related field with a resource string, check the API registry for the resource so we can run its toJSON method
             if (resourceName && this.api && this.api.registry.hasOwnProperty(resourceName)) {
