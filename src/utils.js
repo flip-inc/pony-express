@@ -56,10 +56,10 @@ function buildWhereFilter(columnName, filterType, filter) {
     case 'equal':
     case '=':
     case 'eq':
-      whereFilter = [ '"' + columnName + '" = ?', filter ];
+      whereFilter = [ '' + columnName + ' = ?', filter ];
       break;
     case 'ne':
-      whereFilter = [ '"' + columnName + '" <> ?', filter ];
+      whereFilter = [ '' + columnName + ' <> ?', filter ];
       break;
     case 'in':
       if (isString(filter)) filter = filter.split(',');
