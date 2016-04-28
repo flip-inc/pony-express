@@ -598,6 +598,7 @@ class Resource {
       this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
     }).fetch().then((model) => {
       if (!model) return Promise.reject({ errorMessage: 'Resource not found.', statusCode: 404 });
+      this.bundle.deleted = model.toJSON();
       return Promise.resolve(model);
     }).then((model) => {
       return model.destroy({ require: true });
