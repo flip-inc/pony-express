@@ -6,6 +6,8 @@ const utils = require('../utils');
 class KeyAuthentication extends BaseAuthentication {
 
   constructor(opts) {
+    super();
+    
     opts = Object.assign({
       columnName: 'key',
       Model: false,
