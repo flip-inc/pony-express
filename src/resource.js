@@ -472,7 +472,7 @@ class Resource {
     }).then((count) => {
       this.bundle.meta = {};
       this.bundle.meta.results = this.bundle.objects.length;
-      this.bundle.meta.total_results = parseInt(count);
+      this.bundle.meta.total = parseInt(count);
       this.bundle.meta.limit = this.bundle.query.limit || this.limit;
       this.bundle.meta.offset = this.bundle.query.offset || this.offset;
     }).catch((err) => {
