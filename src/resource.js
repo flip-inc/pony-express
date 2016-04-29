@@ -332,7 +332,7 @@ class Resource {
       let field;
       for (let fieldName of Object.keys(bodyCopy)) {
         field = this.fields[fieldName];
-        if (!field || field.readOnly || field.virtual || field.related) return;
+        if (!field || field.readOnly || field.virtual || field.related) continue;
         if (this.fields.hasOwnProperty(fieldName)) filtered[fieldName] = bodyCopy[fieldName];
       }
     }
