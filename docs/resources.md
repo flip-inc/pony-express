@@ -5,10 +5,10 @@
 Resources can filter objects on fields listed in `this.allowedFilters`.
 
 + [Equal](#equal)
-+ [Not Equal](#notequal)
++ [Not Equal](#not-equal)
 + [In](#in)
-+ [Greater Than/Less Than](#greaterthanorlessthan)
-+ [Starts with/Ends with](#startswithorendswith)
++ [Greater Than/Less Than](#greater-than-or-less-than)
++ [Starts with/Ends with](#starts-with-or-ends-with)
 + [Contains](#contains)
 
 ### Equal
