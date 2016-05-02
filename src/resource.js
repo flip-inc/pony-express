@@ -616,7 +616,7 @@ class Resource {
     let json = {};
 
     // when related resources have toJSON called, make sure they have a bundle object
-    if (!this.bundle && opts.bundle) this.bundle = this.buildBundle(opts.bundle.req, opts.bundle.res, () => {});
+    if (!this.bundle && opts.bundle) this.buildBundle(opts.bundle.req, opts.bundle.res, () => {});
 
     if (objects && utils.isFunction(objects.toJSON)) objects = objects.toJSON();
 
