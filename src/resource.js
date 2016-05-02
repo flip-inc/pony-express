@@ -615,6 +615,9 @@ class Resource {
     }, opts || {});
     let json = {};
 
+    // when related resources have toJSON called, make sure they have a bundle object
+    if (!this.bundle && opts.bundle) this.bundle = this.buildBundle(opts.bundle.req, opts.bundle.res, () => {});
+
     if (objects && utils.isFunction(objects.toJSON)) objects = objects.toJSON();
 
     if (this.fields === 'ALL') return objects;
@@ -661,6 +664,7 @@ class Resource {
               // if it has a full flag, we simple run toJSON on the registered resource and let it do all the work
               if (fieldOpts.full) {
                 cleaned[field] = resource.toJSON(attrs[field], {
+                  bundle: this.bundle,
                   pivotAttrs: fieldOpts.pivotAttrs ? fieldOpts.pivotAttrs : false
                 });
               } else {
