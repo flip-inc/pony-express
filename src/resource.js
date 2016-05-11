@@ -476,8 +476,8 @@ class Resource {
       this.bundle.meta = {};
       this.bundle.meta.results = this.bundle.objects.length;
       this.bundle.meta.totalResults = parseInt(count);
-      this.bundle.meta.limit = this.bundle.query.limit || this.limit;
-      this.bundle.meta.offset = this.bundle.query.offset || this.offset;
+      this.bundle.meta.limit = praseInt(this.bundle.query.limit) || this.limit;
+      this.bundle.meta.offset = parseInt(this.bundle.query.offset) || this.offset;
     }).catch((err) => {
       console.log(err);
       next({ errorMessage: 'Error fetching resources.', statusCode: 500 });

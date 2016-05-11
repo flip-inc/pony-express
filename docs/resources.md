@@ -65,7 +65,7 @@ Examples:
 + Starts with (Case Insensitive): `/api/v1/resource?field__istartswith=value`
 + Ends with (Case Insensitive): `/api/v1/resource?field__iendswith=value`
 
-## Contains
+### Contains
 
 Fetches all objects where the field contains a given value.
 
