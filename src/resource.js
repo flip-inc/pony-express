@@ -91,7 +91,8 @@ class Resource {
     if (!this.include) this.include = [];
     if (!this.limit) this.limit = 100;
     if (!this.offset) this.offset = 0;
-    if (!this.orderBy) this.orderBy = this.identifierField + ' DESC';
+    if (!this.orderBy) this.orderBy = this.identifierField;
+    if (!this.orderDirection) this.orderDirection = 'DESC';
     if (!this.resourceName) this.resourceName = this.Model.prototype.tableName;
     if (!this.virtuals) this.virtuals = [];
     if (!this.where) this.where = [];
@@ -376,8 +377,7 @@ class Resource {
    */
   buildOrderBy() {
     let query = this.bundle.query;
-    let orderBy = this.orderBy;
-    let orderDirection = query.orderDirection || 'DESC';
+    let orderDirection = query.orderDirection || this.orderDirection;
     let validOrderOptions = [];
     let queryOrderOptions;
 
@@ -393,7 +393,7 @@ class Resource {
       }
     }
 
-    this.bundle.orderBy = validOrderOptions.length ? validOrderOptions.join(', ') + ' ' + orderDirection : this.orderBy;
+    this.bundle.orderBy = validOrderOptions.length ? validOrderOptions.join(', ') + ' ' + orderDirection : this.orderBy + ' ' + orderDirection;
 
     return this;
   }
