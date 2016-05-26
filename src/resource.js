@@ -91,7 +91,7 @@ class Resource {
     if (!this.include) this.include = [];
     if (!this.limit) this.limit = 100;
     if (!this.offset) this.offset = 0;
-    if (!this.orderBy) this.orderBy = [this.identifierField, 'DESC'];
+    if (!this.orderBy) this.orderBy = this.identifierField + ' DESC';
     if (!this.resourceName) this.resourceName = this.Model.prototype.tableName;
     if (!this.virtuals) this.virtuals = [];
     if (!this.where) this.where = [];
@@ -99,7 +99,6 @@ class Resource {
     // Advanced defaults
     if (utils.isObject(this.allowedOrderBy) && !~this.allowedOrderBy.indexOf(this.identifierField)) this.allowedOrderBy.push(this.identifierField);
     if (this.customEndpoints.length) this.customEndpoints = this.customEndpoints.map((endpoint => this.parseCustomEndpoint(endpoint)));
-    if (utils.isString(this.orderBy)) this.orderBy = [this.orderBy, 'DESC'];
     if (!utils.isString(this.fields) && !Array.isArray(this.fields)) {
       this.fields = Object.keys(this.fields).reduce((fields, field) => {
         fields[field] = Object.assign({ hidden: false, readOnly: false, required: false, related: false, full: false, pivotAttrs: false, virtual: false }, this.fields[field]);
@@ -378,6 +377,7 @@ class Resource {
   buildOrderBy() {
     let query = this.bundle.query;
     let orderBy = this.orderBy;
+    let orderDirection = query.orderDirection || 'DESC';
     let validOrderOptions = [];
     let queryOrderOptions;
 
@@ -391,13 +391,9 @@ class Resource {
           if (~this.allowedOrderBy.indexOf(opt)) validOrderOptions.push(opt);
         });
       }
-
-      if (validOrderOptions.length) orderBy = [validOrderOptions.join(','), orderBy[1]];
     }
 
-    if (query.orderDirection) orderBy = [orderBy[0], query.orderDirection];
-
-    this.bundle.orderBy = orderBy;
+    this.bundle.orderBy = validOrderOptions.length ? validOrderOptions.join(', ') + ' ' + orderDirection : this.orderBy;
 
     return this;
   }
@@ -447,8 +443,6 @@ class Resource {
    * Express middleware handler for parsing the querystring and saving it back to this.query.
    */
   buildBundle(req, res, next) {
-    let reservedParams = ['limit', 'offset', 'include', 'orderBy', 'orderDirection'].concat(this.customParams);
-
     this.bundle = {
       body: this.buildBody(req.body),
       query: Object.assign({}, req.query),
@@ -493,7 +487,7 @@ class Resource {
 
     return collection.query((qb) => {
       this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
-      qb.orderBy.apply(qb, this.bundle.orderBy);
+      qb.orderByRaw.call(qb, this.bundle.orderBy);
       qb.limit.call(qb, this.bundle.query.limit || this.limit);
       qb.offset.call(qb, this.bundle.query.offset || this.offset);
     }).fetch(fetchOpts).then((collection) => {
