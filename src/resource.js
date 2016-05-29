@@ -2,9 +2,11 @@
 
 const knex = require('knex');
 const pathToRegexp = require('path-to-regexp');
+const Promise = require('bluebird');
 
 const authentication = require('./authentication');
 const authorization = require('./authorization');
+const Request = require('./request');
 const utils = require('./utils');
 
 /** Resource */
@@ -109,52 +111,25 @@ class Resource {
     if (this.where.length && !Array.isArray(this.where[0])) this.where = [this.where];
   }
 
-  /** Verifies that the request URL is a valid endpoint, otherwise respond with a 501. */
-  _verifyEndpoint(req, res, next) {
-    const reqUrl = utils.removeTrailingSlashes(req.baseUrl);
-    const reqMethod = req.method.toLowerCase();
-    let isValid = false;
-    let endpointRegExp;
-
-    this.allowedEndpoints.forEach((endpoint) => {
-      endpointRegExp = pathToRegexp(this.getResourcePathForEndpoint(endpoint));
-      if (endpointRegExp.test(reqUrl) && this.getMethodForEndpoint(endpoint) === reqMethod) isValid = true;
-    });
-
-    this.customEndpoints.forEach((endpoint) => {
-      endpointRegExp = pathToRegexp(endpoint.path);
-      if (endpointRegExp.test(reqUrl) && endpoint.method === reqMethod) isValid = true;
-    });
-
-    if (reqMethod === 'options') isValid = true;
-
-    if (!isValid) return res.status(501).send();
-    
-    next();
-  }
-
   /**
    * Exposes resource endpoints on the app and installs appropriate middleware.
    * @param  {Object} app - Express app.
    * @return {this}
    */
   expose(app) {
-    const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
-    let beforeAll = utils.isFunction(this.beforeAll) ? this.beforeAll : (req, res, next) => { next(); };
-    let afterAll = utils.isFunction(this.afterAll) ? this.afterAll : (req, res, next) => { next(); };
     let beforeHook;
     let afterHook;
 
-    // Handle preflight OPTIONS request to resource
-    // TODO: MAKE BETTER
-    app.options(catchAllResourceUrl, (req, res, next) => { next(); });
-    
+    // Create beforeAll/afterAll hooks
+    if (!utils.isFunction(this.beforeAll)) this.beforeAll = (bundle) => { return Promise.resolve(); };
+    if (!utils.isFunction(this.afterAll)) this.afterAll = (bundle) => { return Promise.resolve(); };
+
     // Create before/after hooks for allowedEndpoints
     this.allowedEndpoints.forEach((endpoint) => {
       beforeHook = 'before' + utils.upperFirst(endpoint);
       afterHook = 'after' + utils.upperFirst(endpoint);
-      if (!this[beforeHook]) this[beforeHook] = (req, res, next) => { next(); };
-      if (!this[afterHook]) this[afterHook] = (req, res, next) => { next(); };
+      if (!this[beforeHook]) this[beforeHook] = (bundle) => { return Promise.resolve(); };
+      if (!this[afterHook]) this[afterHook] = (bundle) => { return Promise.resolve(); };
     });
 
     // Create before/after hooks for customEndpoints
@@ -162,58 +137,150 @@ class Resource {
       if (!utils.isFunction(this[endpoint.handler])) throw new Error(this.constructor.name + ' is missing the handler method for ' + endpoint.path + '.');
       beforeHook = 'before' + utils.upperFirst(endpoint.handler);
       afterHook = 'after' + utils.upperFirst(endpoint.handler);
-      if (!this[beforeHook]) this[beforeHook] = (req, res, next) => { next(); };
-      if (!this[afterHook]) this[afterHook] = (req, res, next) => { next(); };
+      if (!this[beforeHook]) this[beforeHook] = (bundle) => { return Promise.resolve(); };
+      if (!this[afterHook]) this[afterHook] = (bundle) => { return Promise.resolve(); };
     });
 
-    // Verify the current endpoint is valid.
-    app.use(catchAllResourceUrl, this._verifyEndpoint.bind(this));
-    
-    // Build our `bundle` that can be used by other middleware to modify the resource query.
-    app.use(catchAllResourceUrl, this.buildBundle.bind(this));
+    const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
+    app.use(catchAllResourceUrl, (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); });
+  }
 
-    // Bind allowedEndpoints
-    this.allowedEndpoints.forEach((endpoint) => {
-      beforeHook = 'before' + utils.upperFirst(endpoint);
-      afterHook = 'after' + utils.upperFirst(endpoint);
+  /**
+   * Filters req.body and returns only allowed options.
+   * @param  {Object} request.body
+   * @return {Object}
+   */
+  buildBody(body) {
+    let bodyCopy = Object.assign({}, body);
+    let filtered = {};
 
-      app[this.getMethodForEndpoint(endpoint)](
-        this.getResourcePathForEndpoint(endpoint),
-        beforeAll.bind(this),
-        this.authentication.authenticate.bind(this.authentication, endpoint, this),
-        this.authorization.preAuthorize.bind(this.authorization, endpoint, this),
-        this[beforeHook].bind(this),
-        this['_' + endpoint].bind(this),
-        this[afterHook].bind(this),
-        this.authorization.authorize.bind(this.authorization, endpoint, this),
-        afterAll.bind(this)
-      );
+    if (this.fields === 'ALL') return bodyCopy;
+
+    if (Array.isArray(this.fields)) {
+      this.fields.forEach((field) => {
+        if (bodyCopy.hasOwnProperty(field)) filtered[field] = bodyCopy[field];
+      });
+    } else {
+      let field;
+      for (let fieldName of Object.keys(bodyCopy)) {
+        field = this.fields[fieldName];
+        if (!field || field.readOnly || field.virtual || field.related) continue;
+        if (this.fields.hasOwnProperty(fieldName)) filtered[fieldName] = bodyCopy[fieldName];
+      }
+    }
+
+    return filtered;
+  }
+
+  /** Parse allowed filters out of req.query and store them to this.filters */
+  buildFilters(query) {
+    let filters = [];
+
+    let filterName;
+    for (let key of Object.keys(query)) {
+      filterName = key.split('__')[0];
+      if (this.allowedFilters === 'ALL') {
+       if (!~reservedParams.indexOf(filterName) && this.fields !== 'ALL' && ~Object.keys(this.fields).indexOf(filterName)) filters.push(key);
+       else if (!~reservedParams.indexOf(filterName) && this.fields === 'ALL') filters.push(key);
+      } else {
+        if (~this.allowedFilters.indexOf(filterName)) filters.push(key);
+      }
+    }
+
+    return filters;
+  }
+
+  buildQuery(query) {
+    return Object.assign({}, query);
+  }
+
+  buildInclude(query) {
+    let queryIncludes = query.include ? query.include.split(',') : [];
+    let include = [].concat(this.include);
+
+    if (queryIncludes.length > 0) {
+      if (utils.isString(this.allowedIncludes) && this.allowedIncludes === 'ALL') {
+        include = include.concat(queryIncludes);
+      } else {
+        queryIncludes.forEach((relation) => {
+          if (~this.allowedIncludes.indexOf(relation)) include.push(relation);
+        });
+      }
+    }
+
+    return include;
+  }
+
+  /**
+   * Given the filtered query object, build orderBy and put it on this
+   * @return {this}
+   */
+  buildOrderBy(query) {
+    let orderDirection = query.orderDirection || this.orderDirection;
+    let validOrderOptions = [];
+    let queryOrderOptions;
+
+    if (query.orderBy) {
+      queryOrderOptions = query.orderBy.split(',');
+
+      if (utils.isString(this.allowedOrderBy) && this.allowedOrderBy === 'ALL') {
+        validOrderOptions = queryOrderOptions;
+      } else {
+        queryOrderOptions.forEach((opt) => {
+          if (~this.allowedOrderBy.indexOf(opt)) validOrderOptions.push(opt);
+        });
+      }
+    }
+
+    return validOrderOptions.length ? validOrderOptions.join(', ') + ' ' + orderDirection : this.orderBy + ' ' + orderDirection;
+  }
+
+  /**
+   * Builds an array of where filters to apply to the query
+   * @return {Array}
+   */
+  buildWhere(query) {
+    let where = [];
+    let filterType;
+    let filterParts;
+    let columnName;
+
+    let filters = this.buildFilters(query);
+
+    // loop over filters and build the where object
+    filters.forEach((filter) => {
+      filterParts = filter.split('__');
+      columnName = filterParts[0];
+      filterType = filterParts.length > 1 ? filterParts[1] : 'equal';
+
+      where.push(utils.buildWhereFilter(columnName, filterType, query[filter]));
     });
 
-    // Bind customEndpoints
-    this.customEndpoints.forEach((endpoint) => {
-      beforeHook = 'before' + utils.upperFirst(endpoint.handler);
-      afterHook = 'after' + utils.upperFirst(endpoint.handler);
-
-      app[endpoint.method](
-        endpoint.path,
-        beforeAll.bind(this),
-        endpoint.skipAuthentication ? (req, res, next) => { next(); } : this.authentication.authenticate.bind(this.authentication, endpoint, this),
-        endpoint.skipAuthorization ? (req, res, next) => { next(); } : this.authorization.preAuthorize.bind(this.authorization, endpoint, this),
-        this[beforeHook].bind(this),
-        this[endpoint.handler].bind(this),
-        this[afterHook].bind(this),
-        endpoint.skipAuthorization ? (req, res, next) => { next(); } : this.authorization.authorize.bind(this.authorization, endpoint, this),
-        afterAll.bind(this)
-      )
+    // Add default where clauses from the resource
+    this.where.forEach((whereClause) => {
+      if (utils.isFunction(whereClause)) return where.push(whereClause.call(this));
+      where.push(whereClause);
     });
 
-    // Bind final response
-    app.use(catchAllResourceUrl, this.createResponse.bind(this));
+    return where;
+  }
 
-    // Bind error handler
-    if (this.api) app.use(catchAllResourceUrl, this.api.errorHandler.bind(this));
-    else app.use(catchAllResourceUrl, this.errorHandler.bind(this));
+  buildBundle(req, res, next) {
+    // Build our `bundle`
+    let body = this.buildBody(req.body);
+    let query = this.buildQuery(req.query);
+    return {
+      body: body,
+      filters: this.buildFilters(query),
+      include: this.buildInclude(query),
+      orderBy: this.buildOrderBy(query),
+      query: query,
+      where: this.buildWhere(query),
+      req: req,
+      res: res,
+      next: next,
+      resource: this
+    };
   }
 
   /**
@@ -313,292 +380,124 @@ class Resource {
     return true;
   }
 
-  /**
-   * Filters req.body and returns only allowed options.
-   * @param  {Object} request.body
-   * @return {Object}
-   */
-  buildBody(body) {
-    let bodyCopy = Object.assign({}, body);
-    let filtered = {};
-
-    if (this.fields === 'ALL') return bodyCopy;
-
-    if (Array.isArray(this.fields)) {
-      this.fields.forEach((field) => {
-        if (bodyCopy.hasOwnProperty(field)) filtered[field] = bodyCopy[field];
-      });
-    } else {
-      let field;
-      for (let fieldName of Object.keys(bodyCopy)) {
-        field = this.fields[fieldName];
-        if (!field || field.readOnly || field.virtual || field.related) continue;
-        if (this.fields.hasOwnProperty(fieldName)) filtered[fieldName] = bodyCopy[fieldName];
-      }
-    }
-
-    return filtered;
-  }
-
-  /**
-   * Builds an array of where filters to apply to the query
-   * @return {Array}
-   */
-  buildWhere() {
-    let query = this.bundle.query;
-    let where = [];
-    let filterType;
-    let filterParts;
-    let columnName;
-
-    // loop over this.bundle.filters and build the where object
-    this.bundle.filters.forEach((filter) => {
-      filterParts = filter.split('__');
-      columnName = filterParts[0];
-      filterType = filterParts.length > 1 ? filterParts[1] : 'equal';
-
-      where.push(utils.buildWhereFilter(columnName, filterType, query[filter]));
-    });
-
-    // Add default where clauses from the resource
-    this.where.forEach((whereClause) => {
-      if (utils.isFunction(whereClause)) return where.push(whereClause.call(this));
-      where.push(whereClause);
-    });
-
-    this.bundle.where = where;
-
-    return this;
-  }
-
-  /**
-   * Given the filtered query object, build orderBy and put it on this.bundle
-   * @return {this}
-   */
-  buildOrderBy() {
-    let query = this.bundle.query;
-    let orderDirection = query.orderDirection || this.orderDirection;
-    let validOrderOptions = [];
-    let queryOrderOptions;
-
-    if (query.orderBy) {
-      queryOrderOptions = query.orderBy.split(',');
-
-      if (utils.isString(this.allowedOrderBy) && this.allowedOrderBy === 'ALL') {
-        validOrderOptions = queryOrderOptions;
-      } else {
-        queryOrderOptions.forEach((opt) => {
-          if (~this.allowedOrderBy.indexOf(opt)) validOrderOptions.push(opt);
-        });
-      }
-    }
-
-    this.bundle.orderBy = validOrderOptions.length ? validOrderOptions.join(', ') + ' ' + orderDirection : this.orderBy + ' ' + orderDirection;
-
-    return this;
-  }
-
-  /**
-   * [buildInclude description]
-   * @return {[type]} [description]
-   */
-  buildInclude() {
-    let query = this.bundle.query;
-    let include = query.include ? query.include.split(',') : [];
-
-    this.bundle.include = [].concat(this.include);
-
-    if (include.length > 0) {
-      if (utils.isString(this.allowedIncludes) && this.allowedIncludes === 'ALL') {
-        this.bundle.include.concat(include);
-      } else {
-        include.forEach((relation) => {
-          if (~this.allowedIncludes.indexOf(relation)) this.bundle.include.push(relation);
-        });
-      }
-    }
-
-    return this;
-  }
-
-  /** Parse allowed filters out of req.query and store them to this.bundle.filters */
-  buildFilters() {
-    this.bundle.filters = [];
-
-    let filterName;
-    for (let key of Object.keys(this.bundle.query)) {
-      filterName = key.split('__')[0];
-      if (this.allowedFilters === 'ALL') {
-       if (!~reservedParams.indexOf(filterName) && this.fields !== 'ALL' && ~Object.keys(this.fields).indexOf(filterName)) this.bundle.filters.push(key);
-       else if (!~reservedParams.indexOf(filterName) && this.fields === 'ALL') this.bundle.filters.push(key);
-      } else {
-        if (~this.allowedFilters.indexOf(filterName)) this.bundle.filters.push(key);
-      }
-    }
-
-    return this;
-  }
-
-  /**
-   * Express middleware handler for parsing the querystring and saving it back to this.query.
-   */
-  buildBundle(req, res, next) {
-    this.bundle = {
-      body: this.buildBody(req.body),
-      query: Object.assign({}, req.query),
-      req: req,
-      res: res
-    };
-
-    this.buildFilters();
-    this.buildInclude();
-    this.buildWhere();
-    this.buildOrderBy();
-
-    next();
-  }
-
-  /** Internal middleware handler for a GET request to the resource list url. */
-  _getList(req, res, next) {
-    let collection = this.Model.collection();
-
-    this.getList().then(() => {
-      return collection.query((qb) => {
-        this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
-      }).count();
-    }).then((count) => {
-      this.bundle.meta = {};
-      this.bundle.meta.results = this.bundle.objects.length;
-      this.bundle.meta.totalResults = parseInt(count);
-      this.bundle.meta.limit = parseInt(this.bundle.query.limit) || this.limit;
-      this.bundle.meta.offset = parseInt(this.bundle.query.offset) || this.offset;
-    }).catch((err) => {
-      console.log(err);
-      next({ errorMessage: 'Error fetching resources.', statusCode: 500 });
-    }).finally(next);
-  }
-
   /** Builds the query for GET request to the resource list url and returns the Promise. */
-  getList() {
+  getList(bundle) {
     let collection = this.Model.collection();
     let fetchOpts = {};
 
-    if (this.bundle.include.length) fetchOpts.withRelated = this.bundle.include;
+    if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
     return collection.query((qb) => {
-      this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
-      qb.orderByRaw.call(qb, this.bundle.orderBy);
-      qb.limit.call(qb, this.bundle.query.limit || this.limit);
-      qb.offset.call(qb, this.bundle.query.offset || this.offset);
+      bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
+      qb.orderByRaw.call(qb, bundle.orderBy);
+      qb.limit.call(qb, bundle.query.limit || this.limit);
+      qb.offset.call(qb, bundle.query.offset || this.offset);
     }).fetch(fetchOpts).then((collection) => {
-      this.bundle.objects = collection;
+      bundle.objects = collection;
       return Promise.resolve(collection);
-    });
-  }
-
-  /** Internal middleware handler for a GET request to the resource detail url. */
-  _getDetail(req, res, next) {
-    return this.getDetail(req.params[this.identifierField]).catch(this.Model.NotFoundError, (err) => {
-      next({ errorMessage: 'Resource not found.', statusCode: 404 });
+    }).then(() => {
+      return collection.query((qb) => {
+        bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
+      }).count();
+    }).then((count) => {
+      bundle.meta = {};
+      bundle.meta.results = bundle.objects.length;
+      bundle.meta.totalResults = parseInt(count);
+      bundle.meta.limit = parseInt(bundle.query.limit) || this.limit;
+      bundle.meta.offset = parseInt(bundle.query.offset) || this.offset;
+      return Promise.resolve(bundle.objects);
     }).catch((err) => {
       console.trace(err);
-      next(err);
-    }).finally(next);
+      return Promise.reject({ errorMessage: 'Error fetching resources.', statusCode: 500 });
+    });
   }
 
   /** Builds the query for GET request to the resource detail url and returns the Promise. */
-  getDetail(identifier) {
+  getDetail(bundle) {
     let model = this.Model.forge({
-      [this.identifierField]: identifier
+      [this.identifierField]: bundle.req.params[this.identifierField]
     });
     let fetchOpts = { require: true };
 
-    if (this.bundle.include.length) fetchOpts.withRelated = this.bundle.include;
+    if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
     return model.query((qb) => {
-      this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
+      bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
     }).fetch(fetchOpts).then((model) => {
-      this.bundle.objects = model;
+      bundle.objects = model;
       return Promise.resolve(model);
+    }).catch(this.Model.NotFoundError, (err) => {
+      return Promise.reject({ errorMessage: 'Resource not found.', statusCode: 404 });
+    }).catch((err) => {
+      console.trace(err);
+      if (err.errorMessage) return Promise.reject(err);
+      return Promise.reject({ errorMessage: 'Error fetching resource.', statusCode: 500 });
     });
-  }
-
-  /** Internal middleware handler for a PUT request to the resource detail url. */
-  _put(req, res, next) {
-    return this.put(req.params[this.identifierField]).catch(next).finally(next);
   }
 
   /** Builds the query for a PUT request to the resource detail url and returns a Promise. */
-  put(identifier) {
+  put(bundle) {
     let model = this.Model.forge({
-      [this.identifierField]: identifier
+      [this.identifierField]: bundle.req.params[this.identifierField]
     });
     let fetchOpts = {};
 
-    if (this.bundle.include.length) fetchOpts.withRelated = this.bundle.include;
+    if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
     return model.query((qb) => {
-      this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
+      bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
     }).fetch(fetchOpts).then((model) => {
       if (!model) return Promise.reject({ errorMessage: 'Resource not found.', statusCode: 404 });
-
-      return Promise.resolve(model);
-    }).then((model) => {
-      return model.save(this.bundle.body);
+      return model.save(bundle.body);
     }).then((updated) => {
-      this.bundle.objects = updated;
+      bundle.objects = updated;
       return Promise.resolve(updated);
+    }).catch((err) => {
+      console.trace(err);
+      if (err.errorMessage) return Promise.reject(err);
+      return Promise.reject({ errorMessage: 'Error updating resource.', statusCode: 500 });
     });
-  }
-
-  /** Internal middleware handler for a POST request to the resource list url. */
-  _post(req, res, next) {
-    let isValid = this.validateRequiredFields(this.bundle.body);
-
-    if (isValid !== true) return next(isValid);
-
-    return this.post(this.bundle.body).catch((err) => {
-      console.log(err);
-      next({ errorMessage: 'Error creating resource.', statusCode: 400 });
-    }).finally(next);
   }
 
   /** Builds the query for a POST request to the resource list url and returns a Promise. */
-  post(attrs) {
-    let model = this.Model.forge(attrs);
+  post(bundle) {
+    let isValid = this.validateRequiredFields(bundle.body);
+
+    if (isValid !== true) return Promise.reject(isValid);
+
+    let model = this.Model.forge(bundle.body);
     let fetchOpts = {};
 
-    if (this.bundle.include.length) fetchOpts.withRelated = this.bundle.include;
+    if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
     return model.save().then((model) => {
       return this.Model.forge({ [this.identifierField]: model.get(this.identifierField) }).fetch(fetchOpts);
     }).then((model) => {
-      this.bundle.objects = model;
+      bundle.objects = model;
       return Promise.resolve(model);
+    }).catch((err) => {
+      console.trace(err);
+      if (err.errorMessage) return Promise.reject(err);
+      return Promise.reject({ errorMessage: 'Error creating resource.', statusCode: 500 });
     });
   }
 
-  /** Internal middleware handler for a DELETE request to the resource detail url. */
-  _delete(req, res, next) {
-    return this.delete(req.params[this.identifierField]).catch((err) => {
-      if (err.errorMessage) return next(err);
-      next({ errorMessage: 'Error deleting resource', statusCode: 400 });
-    }).finally(next);
-  }
-
-  delete(identifier) {
+  delete(bundle) {
     let model = this.Model.forge({
-      [this.identifierField]: identifier
+      [this.identifierField]: bundle.req.params[this.identifierField]
     });
 
     return model.query((qb) => {
-      this.bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
+      bundle.where.forEach(whereClause => qb.whereRaw.apply(qb, whereClause));
     }).fetch().then((model) => {
       if (!model) return Promise.reject({ errorMessage: 'Resource not found.', statusCode: 404 });
-      this.bundle.deleted = model.toJSON();
       return Promise.resolve(model);
     }).then((model) => {
       return model.destroy({ require: true });
+    }).catch((err) => {
+      console.trace(err);
+      if (err.errorMessage) return Promise.reject(err);
+      Promise.reject({ errorMessage: 'Error deleting resource', statusCode: 500 });
     });
   }
 
@@ -608,9 +507,6 @@ class Resource {
       pivotAttrs: false
     }, opts || {});
     let json = {};
-
-    // when related resources have toJSON called, make sure they have a bundle object
-    if (!this.bundle && opts.bundle) this.buildBundle(opts.bundle.req, opts.bundle.res, () => {});
 
     if (objects && utils.isFunction(objects.toJSON)) objects = objects.toJSON();
 
@@ -658,7 +554,7 @@ class Resource {
               // if it has a full flag, we simple run toJSON on the registered resource and let it do all the work
               if (fieldOpts.full) {
                 cleaned[field] = resource.toJSON(attrs[field], {
-                  bundle: this.bundle,
+                  bundle: opts.bundle,
                   pivotAttrs: fieldOpts.pivotAttrs ? fieldOpts.pivotAttrs : false
                 });
               } else {
@@ -685,7 +581,7 @@ class Resource {
 
       // add virtuals
       this.virtuals.forEach((virtual) => {
-        if (utils.isFunction(this[virtual])) cleaned[virtual] = this[virtual].call(this, attrs);
+        if (utils.isFunction(this[virtual])) cleaned[virtual] = this[virtual].call(this, attrs, opts.bundle);
       });
 
       return cleaned;
@@ -697,30 +593,10 @@ class Resource {
     return json;
   }
 
-  /** Middleware to send the response. */
-  createResponse(req, res, next) {
-    let fallbackStatus = 200;
-
-    if (req.method === 'POST') fallbackStatus = 202;
-    if (req.method === 'DELETE') fallbackStatus = 204;
-
-    let json = {};
-    let cleaned = this.bundle.objects ? this.toJSON(this.bundle.objects) : {};
-
-    if (Array.isArray(cleaned)) {
-      json.objects = cleaned;
-      json.meta = this.bundle.meta || {};
-    } else {
-      json = cleaned;
-    }
-
-    if (json) res.status(this.bundle.statusCode || fallbackStatus).json(json);
-    else res.status(this.bundle.statusCode || fallbackStatus).send();
-  }
-
   /** Middleware for error handling. */
   errorHandler(err, req, res, next) {
-    // Check if this is a v1 route
+    if (this.api) return this.api.errorHandler.call(this, err, req, res, next);
+
     let json = {};
 
     Object.assign(json, {

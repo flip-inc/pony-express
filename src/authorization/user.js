@@ -1,5 +1,7 @@
 'use strict';
 
+const Promise = require('bluebird');
+
 const BaseAuthorization = require('./base');
 const utils = require('../utils');
 
@@ -18,19 +20,21 @@ class UserAuthorization extends BaseAuthorization {
   }
 
   /** UserAuthorization filters the query on opts.relationIdField === req.user[opts.userIdField] */
-  preDefault(resource, req, res, next) {
-    resource.bundle.where.push(utils.buildWhereFilter(this.opts.relationIdField, '=', req.user[this.opts.userIdField]));
-    next();
+  preDefault(bundle) {
+    let req = bundle.req;
+    bundle.where.push(utils.buildWhereFilter(this.opts.relationIdField, '=', req.user[this.opts.userIdField]));
+    return Promise.resolve();
   }
 
-  default(resource, req, res, next) {
-    next();
+  default(bundle) {
+    return Promise.resolve();
   }
 
   /** Make sure resource.body has this.opts.relationIdField and is assigned to req.user[this.opts.userIdField] */
-  prePost(resource, req, res, next) {
-    resource.bundle.body[this.opts.relationIdField] = req.user[this.opts.userIdField];
-    next();
+  prePost(bundle) {
+    let req = bundle.req;
+    bundle.body[this.opts.relationIdField] = req.user[this.opts.userIdField];
+    return Promise.resolve();
   }
 
 }

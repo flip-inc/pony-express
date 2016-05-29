@@ -17,6 +17,7 @@
   "author": "Blake Owens <blake@blakeowens.com> (http://blakeowens.com)",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.4.0",
     "knex": "^0.10.0",
     "node-uuid": "^1.4.7",
     "path-to-regexp": "^1.2.1"

@@ -1,5 +1,7 @@
 'use strict';
 
+const Promise = require('bluebird');
+
 const BaseAuthentication = require('./base');
 const utils = require('../utils');
 
@@ -21,10 +23,10 @@ class KeyAuthentication extends BaseAuthentication {
     if (!this.Model) throw new Error('A model is required for KeyAuthentication.');
   }
 
-  default(resource, req, res, next) {
-    this.Model.forge({ [this.columnName]: req.query[this.param] }).fetch().then((key) => {
-      if (!key) return res.status(401).send();
-      next();
+  default(bundle) {
+    return this.Model.forge({ [this.columnName]: req.query[this.param] }).fetch().then((key) => {
+      if (!key) return Promise.reject({ errorMessage: 'Authentication required.', statusCode: 401 });
+      return Promise.resolve();
     });
   }
 
