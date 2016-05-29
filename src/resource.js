@@ -148,11 +148,12 @@ class Resource {
       app[endpoint.method](
         endpoint.path,
         (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); }
-      )
+      );
     });
 
-    // const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
-    // app.use(catchAllResourceUrl, (req, res, next) => {  });
+    // Allow options requests through to be handled by Request
+    const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
+    app.options(catchAllResourceUrl, (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); });
   }
 
   /**
