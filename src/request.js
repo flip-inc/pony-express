@@ -52,11 +52,11 @@ class Request {
     // Normalize methods for custom endpoints vs regular endpoints
     let authenticate;
     let preAuthorize;
-    let beforeAll = this.resource.beforeAll.bind(this.resource);
+    let beforeAll = this.resource.beforeAll.bind(this.resource, this.bundle);
     let beforeHandler;
     let handler;
     let afterHandler;
-    let afterAll = this.resource.afterAll.bind(this.resource);
+    let afterAll = this.resource.afterAll.bind(this.resource, this.bundle);
     let authorize;
 
     // If custom endpoint
