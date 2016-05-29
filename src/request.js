@@ -21,7 +21,7 @@ class Request {
 
   /** Verifies that the request URL is a valid endpoint for this.resource, otherwise respond with a 501. */
   parseEndpoint() {
-    const reqUrl = utils.removeTrailingSlashes(this.bundle.req.baseUrl);
+    const reqUrl = utils.removeTrailingSlashes(this.bundle.req._parsedUrl.pathname);
     const reqMethod = this.bundle.req.method.toLowerCase();
     let currentEndpoint = false;
     let endpointRegExp;
@@ -77,14 +77,14 @@ class Request {
     }
 
     authenticate()
-      .then(preAuthorize)
-      .then(beforeAll)
-      .then(beforeHandler)
-      .then(handler)
-      .then(afterHandler)
-      .then(afterAll)
-      .then(authorize)
-      .then(() => {
+    .then(preAuthorize)
+    .then(beforeAll)
+    .then(beforeHandler)
+    .then(handler)
+    .then(afterHandler)
+    .then(afterAll)
+    .then(authorize)
+    .then(() => {
       // Create response
       let fallbackStatus = 200;
 

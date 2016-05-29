@@ -124,12 +124,17 @@ class Resource {
     if (!utils.isFunction(this.beforeAll)) this.beforeAll = (bundle) => { return Promise.resolve(); };
     if (!utils.isFunction(this.afterAll)) this.afterAll = (bundle) => { return Promise.resolve(); };
 
-    // Create before/after hooks for allowedEndpoints
+    // Create before/after hooks for allowedEndpoints and bind endpoint middleware
     this.allowedEndpoints.forEach((endpoint) => {
       beforeHook = 'before' + utils.upperFirst(endpoint);
       afterHook = 'after' + utils.upperFirst(endpoint);
       if (!this[beforeHook]) this[beforeHook] = (bundle) => { return Promise.resolve(); };
       if (!this[afterHook]) this[afterHook] = (bundle) => { return Promise.resolve(); };
+
+      app[this.getMethodForEndpoint(endpoint)](
+        this.getResourcePathForEndpoint(endpoint),
+        (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); }
+      );
     });
 
     // Create before/after hooks for customEndpoints
@@ -139,10 +144,15 @@ class Resource {
       afterHook = 'after' + utils.upperFirst(endpoint.handler);
       if (!this[beforeHook]) this[beforeHook] = (bundle) => { return Promise.resolve(); };
       if (!this[afterHook]) this[afterHook] = (bundle) => { return Promise.resolve(); };
+
+      app[endpoint.method](
+        endpoint.path,
+        (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); }
+      )
     });
 
-    const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
-    app.use(catchAllResourceUrl, (req, res, next) => { new Request(this, this.buildBundle(req, res, next)); });
+    // const catchAllResourceUrl = this.apiRoot + '/' + this.resourceName + '*';
+    // app.use(catchAllResourceUrl, (req, res, next) => {  });
   }
 
   /**
