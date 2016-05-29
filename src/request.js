@@ -46,6 +46,9 @@ class Request {
     // If we couldn't identify the endpoint, it's not an implemented endpoint, return 501
     if (this.endpoint === false) return this.bundle.res.sendStatus(501);
 
+    // If it's an OPTIONS request and we have a valid endpoint, immediately return a respond
+    if (this.bundle.req.method.toLowerCase() === 'options') return this.bundle.res.sendStatus(200);
+
     // Normalize methods for custom endpoints vs regular endpoints
     let authenticate;
     let preAuthorize;
