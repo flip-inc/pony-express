@@ -63,11 +63,11 @@ function buildWhereFilter(columnName, filterType, filter) {
       break;
     case 'in':
       if (isString(filter)) filter = filter.split(',');
-      whereFilter = [ '' + columnName + ' IN (' + filter.map(f => "'" + f + "'").join(', ') + ')' ];
+      whereFilter = [ '' + columnName + ' IN (' + filter.map(f => "?").join(', ') + ')', filter ];
       break;
     case 'iin':
       if (isString(filter)) filter = filter.split(',');
-      whereFilter = [ 'LOWER(' + columnName + ') IN (' + filter.map(f => "'" + f.toLowerCase() + "'").join(', ') + ')' ];
+      whereFilter = [ 'LOWER(' + columnName + ') IN (' + filter.map(f => "?").join(', ') + ')', filter.map(f => f.toLowerCase()) ];
       break;
     case 'gte':
       whereFilter = [ '' + columnName + ' >= ?', filter ];
