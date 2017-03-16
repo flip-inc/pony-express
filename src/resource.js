@@ -186,6 +186,13 @@ class Resource {
   /** Parse allowed filters out of req.query and store them to this.filters */
   buildFilters(query) {
     let filters = [];
+    let reservedParams = [
+      'limit',
+      'include',
+      'offset',
+      'orderBy',
+      'orderDirection',
+    ];
 
     let filterName;
     for (let key of Object.keys(query)) {
