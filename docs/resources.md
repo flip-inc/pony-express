@@ -1,4 +1,4 @@
-# [pony-express.Resource](../src/resource)
+# [pony-express.Resource](../src/resource.js)
 
 A pony-express Resource is a highly extendable way to kickstart a RESTful API resource.
 
@@ -135,7 +135,8 @@ class MyResource extends pony.Resource {
     this.allowedEndpoints = ['getList'];
     this.Model = Todo;
   }
-}```
+}
+```
 
 ### `resource.Model`, `Bookshelf.Model` (REQUIRED)
 
@@ -234,7 +235,8 @@ class UploadResource extends pony.Resource {
   signRequest(bundle) {
     // implementation...
   }
-}```
+}
+```
 
 ### `resource.fields`, `Array[String]` or `Object`
 
@@ -388,7 +390,8 @@ class PublicTodoResource extends pony.Resource {
     ];
   }
 
-}```
+}
+```
 
 ## Filtering Requests
 

@@ -52,11 +52,10 @@ From there, you can continue to modify resources by mounting then as an [API](do
 
 ## Documentation & Examples
 
-The API reference is located in the [docs](docs) directory or there's a [todo example](docs/examples) to check out.
+The API reference is located in the [docs](docs) directory or there's a [todo example](docs/examples) and [getting started guide](docs/getting-started.md) to check out.
 
 ---
 
-+ [Getting Started](docs/getting-started.md)
 + [Api](docs/api.md)
 + [Authentication](docs/authentication.md)
 + [Authorization](docs/authorization.md)

@@ -1,4 +1,4 @@
-# [pony-express.authentication](../src/authentication)
+# [pony-express.authentication](../src/authentication.js)
 
 Authentication hooks should check if a request is authenticated for a given resource. Authentication classes have one hook that is called after [api.before](./api.md#methods) and before [all other hooks](./resources.md#request-pipeline).
 

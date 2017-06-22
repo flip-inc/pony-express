@@ -1,4 +1,4 @@
-# [pony-express.authorization](../src/authorization)
+# [pony-express.authorization](../src/authorization.js)
 
 Authorization hooks should implement more fine-grained control over resource authorization. Authorization classes have two hooks. One is called after the `authorize` hook and the other is called at the end of the [resource request pipeline](./resources.md#request-pipeline).
 
