@@ -52,7 +52,7 @@ From there, you can continue to modify resources by mounting then as an [API](do
 
 ## Documentation & Examples
 
-The API reference is located in the [docs](docs) directory or there's a [todo example](docs/examples) and [getting started guide](docs/getting-started.md) to check out.
+The API reference is located in the [docs](docs) directory or there's an [example starter api](https://github.com/owensbla/express-api-starter) to check out.
 
 ---
 
