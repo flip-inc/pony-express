@@ -86,7 +86,6 @@ class Resource {
     if (!this.authentication) this.authentication = new authentication.BaseAuthentication();
     if (!this.authorization) this.authorization = new authorization.BaseAuthorization();
     if (!this.customEndpoints) this.customEndpoints = [];
-    if (!this.customParams) this.customParams = [];
     if (!this.fields) this.fields = 'ALL';
     if (!this.identifier) this.identifier = defaultIdentifier;
     this.identifierField = normalizedIdentifier;

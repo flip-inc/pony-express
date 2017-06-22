@@ -1,7 +1,7 @@
 {
   "name": "pony-express",
-  "version": "0.0.1",
-  "description": "RESTful API generator for Express and Bookshelf.js",
+  "version": "1.0.0",
+  "description": "RESTful API generator for Express using Bookshelf.js models with MySQL or PostgreSQL.",
   "main": "src/index.js",
   "scripts": {
     "build": "babel src --out-dir dist --copy-files --presets es2015",
@@ -9,12 +9,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/owensbla/pony-express.git"
+    "url": "git://github.com/flip-inc/pony-express.git"
   },
   "bugs": {
-    "url": "https://github.com/owensbla/pony-express/issues"
+    "url": "https://github.com/flip-inc/pony-express/issues"
   },
-  "author": "Blake Owens <blake@blakeowens.com> (http://blakeowens.com)",
+  "keywords": ["api generator", "express api", "bookshelf api", "rest api"],
+  "author": "Flip Technologies, Inc.",
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.4.0",
