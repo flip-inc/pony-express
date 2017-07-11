@@ -8,6 +8,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var Promise = require('bluebird');
+
 var BaseAuthentication = require('./base');
 var utils = require('../utils');
 
@@ -17,14 +19,18 @@ var UserAuthentication = function (_BaseAuthentication) {
   function UserAuthentication() {
     _classCallCheck(this, UserAuthentication);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(UserAuthentication).apply(this, arguments));
+    return _possibleConstructorReturn(this, (UserAuthentication.__proto__ || Object.getPrototypeOf(UserAuthentication)).apply(this, arguments));
   }
 
   _createClass(UserAuthentication, [{
     key: 'default',
-    value: function _default(resource, req, res, next) {
-      if (!req.user) return res.status(401).send();
-      next();
+    value: function _default(bundle) {
+      var req = bundle.req;
+      var res = bundle.res;
+
+      if (!req.user) return Promise.reject({ errorMessage: 'Authentication required.', statusCode: 401 });
+
+      return Promise.resolve();
     }
   }]);
 

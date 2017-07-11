@@ -58,52 +58,54 @@ function buildWhereFilter(columnName, filterType, filter) {
     case 'equal':
     case '=':
     case 'eq':
-      whereFilter = ['"' + columnName + '" = ?', filter];
+      whereFilter = ['' + columnName + ' = ?', filter];
       break;
     case 'ne':
-      whereFilter = ['"' + columnName + '" <> ?', filter];
+      whereFilter = ['' + columnName + ' <> ?', filter];
       break;
     case 'in':
       if (isString(filter)) filter = filter.split(',');
-      whereFilter = ['"' + columnName + '" IN (' + filter.map(function (f) {
-        return "'" + f + "'";
-      }).join(', ') + ')'];
+      whereFilter = ['' + columnName + ' IN (' + filter.map(function (f) {
+        return "?";
+      }).join(', ') + ')', filter];
       break;
     case 'iin':
       if (isString(filter)) filter = filter.split(',');
-      whereFilter = ['LOWER("' + columnName + '") IN (' + filter.map(function (f) {
-        return "'" + f.toLowerCase() + "'";
-      }).join(', ') + ')'];
+      whereFilter = ['LOWER(' + columnName + ') IN (' + filter.map(function (f) {
+        return "?";
+      }).join(', ') + ')', filter.map(function (f) {
+        return f.toLowerCase();
+      })];
       break;
     case 'gte':
-      whereFilter = ['"' + columnName + '" >= ?', filter];
+      whereFilter = ['' + columnName + ' >= ?', filter];
       break;
     case 'gt':
-      whereFilter = ['"' + columnName + '" > ?', filter];
+      whereFilter = ['' + columnName + ' > ?', filter];
       break;
     case 'lte':
-      whereFilter = ['"' + columnName + '" <= ?', filter];
+      whereFilter = ['' + columnName + ' <= ?', filter];
       break;
     case 'lt':
-      whereFilter = ['"' + columnName + '" < ?', filter];
+      whereFilter = ['' + columnName + ' < ?', filter];
       break;
     case 'startswith':
-      whereFilter = ['"' + columnName + '" LIKE ?', filter + '%'];
+      whereFilter = ['' + columnName + ' LIKE ?', filter + '%'];
       break;
     case 'endswith':
-      whereFilter = ['"' + columnName + '" LIKE ?', '%' + filter];
+      whereFilter = ['' + columnName + ' LIKE ?', '%' + filter];
       break;
     case 'contains':
-      whereFilter = ['"' + columnName + '" LIKE ?', '%' + filter + '%'];
+      whereFilter = ['' + columnName + ' LIKE ?', '%' + filter + '%'];
       break;
     case 'istartswith':
-      whereFilter = ['LOWER("' + columnName + '") LIKE ?', filter.toLowerCase() + '%'];
+      whereFilter = ['LOWER(' + columnName + ') LIKE ?', filter.toLowerCase() + '%'];
       break;
     case 'iendswith':
-      whereFilter = ['LOWER("' + columnName + '") LIKE ?', '%' + filter.toLowerCase()];
+      whereFilter = ['LOWER(' + columnName + ') LIKE ?', '%' + filter.toLowerCase()];
       break;
     case 'icontains':
-      whereFilter = ['LOWER("' + columnName + '") LIKE ?', '%' + filter.toLowerCase() + '%'];
+      whereFilter = ['LOWER(' + columnName + ') LIKE ?', '%' + filter.toLowerCase() + '%'];
       break;
   }
 

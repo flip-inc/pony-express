@@ -2,6 +2,8 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -10,54 +12,42 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var Promise = require('bluebird');
 
-var BaseAuthorization = require('./base');
+var BaseAuthentication = require('./base');
 var utils = require('../utils');
 
-var UserAuthorization = function (_BaseAuthorization) {
-  _inherits(UserAuthorization, _BaseAuthorization);
+var KeyAuthentication = function (_BaseAuthentication) {
+  _inherits(KeyAuthentication, _BaseAuthentication);
 
-  function UserAuthorization(opts) {
-    _classCallCheck(this, UserAuthorization);
+  function KeyAuthentication(opts) {
+    _classCallCheck(this, KeyAuthentication);
 
-    var _this = _possibleConstructorReturn(this, (UserAuthorization.__proto__ || Object.getPrototypeOf(UserAuthorization)).call(this));
+    var _this = _possibleConstructorReturn(this, (KeyAuthentication.__proto__ || Object.getPrototypeOf(KeyAuthentication)).call(this));
 
-    opts = opts ? opts : {};
     opts = Object.assign({
-      relationIdField: 'user_id',
-      userIdField: 'id'
+      columnName: 'key',
+      Model: false,
+      param: 'key'
     }, opts);
 
-    _this.opts = opts;
+    _this.columnName = opts.columnName;
+    _this.Model = opts.Model;
+    _this.param = opts.param;
+
+    if (!_this.Model) throw new Error('A model is required for KeyAuthentication.');
     return _this;
   }
 
-  /** UserAuthorization filters the query on opts.relationIdField === req.user[opts.userIdField] */
-
-  _createClass(UserAuthorization, [{
-    key: 'preDefault',
-    value: function preDefault(bundle) {
-      var req = bundle.req;
-      bundle.where.push(utils.buildWhereFilter(this.opts.relationIdField, '=', req.user[this.opts.userIdField]));
-      return Promise.resolve();
-    }
-  }, {
+  _createClass(KeyAuthentication, [{
     key: 'default',
     value: function _default(bundle) {
-      return Promise.resolve();
-    }
-
-    /** Make sure resource.body has this.opts.relationIdField and is assigned to req.user[this.opts.userIdField] */
-
-  }, {
-    key: 'prePost',
-    value: function prePost(bundle) {
-      var req = bundle.req;
-      bundle.body[this.opts.relationIdField] = req.user[this.opts.userIdField];
-      return Promise.resolve();
+      return this.Model.forge(_defineProperty({}, this.columnName, req.query[this.param])).fetch().then(function (key) {
+        if (!key) return Promise.reject({ errorMessage: 'Authentication required.', statusCode: 401 });
+        return Promise.resolve();
+      });
     }
   }]);
 
-  return UserAuthorization;
-}(BaseAuthorization);
+  return KeyAuthentication;
+}(BaseAuthentication);
 
-module.exports = UserAuthorization;
+module.exports = KeyAuthentication;
