@@ -2,7 +2,7 @@
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 
 function isObject(thing) {
   return (typeof thing === 'undefined' ? 'undefined' : _typeof(thing)) === 'object';
