@@ -1,6 +1,6 @@
 {
   "name": "pony-express",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "RESTful API generator for Express using Bookshelf.js models with MySQL or PostgreSQL.",
   "main": "src/index.js",
   "scripts": {
