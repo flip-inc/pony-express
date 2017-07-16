@@ -122,7 +122,7 @@ var Resource = function () {
       if (!this.where) this.where = [];
 
       // Advanced defaults
-      if (utils.isObject(this.allowedOrderBy) && ! ~this.allowedOrderBy.indexOf(this.identifierField)) this.allowedOrderBy.push(this.identifierField);
+      if (utils.isObject(this.allowedOrderBy) && !~this.allowedOrderBy.indexOf(this.identifierField)) this.allowedOrderBy.push(this.identifierField);
       if (this.customEndpoints.length) this.customEndpoints = this.customEndpoints.map(function (endpoint) {
         return _this2.parseCustomEndpoint(endpoint);
       });
@@ -146,8 +146,8 @@ var Resource = function () {
     value: function expose(app) {
       var _this3 = this;
 
-      var beforeHook = undefined;
-      var afterHook = undefined;
+      var beforeHook = void 0;
+      var afterHook = void 0;
 
       // Create beforeAll/afterAll hooks
       if (!utils.isFunction(this.beforeAll)) this.beforeAll = function (bundle) {
@@ -216,7 +216,7 @@ var Resource = function () {
           if (bodyCopy.hasOwnProperty(field)) filtered[field] = bodyCopy[field];
         });
       } else {
-        var field = undefined;
+        var field = void 0;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -256,7 +256,7 @@ var Resource = function () {
       var filters = [];
       var reservedParams = ['limit', 'include', 'offset', 'orderBy', 'orderDirection'];
 
-      var filterName = undefined;
+      var filterName = void 0;
       var _iteratorNormalCompletion2 = true;
       var _didIteratorError2 = false;
       var _iteratorError2 = undefined;
@@ -267,7 +267,7 @@ var Resource = function () {
 
           filterName = key.split('__')[0];
           if (this.allowedFilters === 'ALL') {
-            if (! ~reservedParams.indexOf(filterName) && this.fields !== 'ALL' && ~Object.keys(this.fields).indexOf(filterName)) filters.push(key);else if (! ~reservedParams.indexOf(filterName) && this.fields === 'ALL') filters.push(key);
+            if (!~reservedParams.indexOf(filterName) && this.fields !== 'ALL' && ~Object.keys(this.fields).indexOf(filterName)) filters.push(key);else if (!~reservedParams.indexOf(filterName) && this.fields === 'ALL') filters.push(key);
           } else {
             if (~this.allowedFilters.indexOf(filterName)) filters.push(key);
           }
@@ -327,7 +327,7 @@ var Resource = function () {
 
       var orderDirection = query.orderDirection || this.orderDirection;
       var validOrderOptions = [];
-      var queryOrderOptions = undefined;
+      var queryOrderOptions = void 0;
 
       if (query.orderBy) {
         queryOrderOptions = query.orderBy.split(',');
@@ -355,9 +355,9 @@ var Resource = function () {
       var _this6 = this;
 
       var where = [];
-      var filterType = undefined;
-      var filterParts = undefined;
-      var columnName = undefined;
+      var filterType = void 0;
+      var filterParts = void 0;
+      var columnName = void 0;
 
       var filters = this.buildFilters(query);
 
@@ -412,7 +412,7 @@ var Resource = function () {
       var method = methodAndListOrDetail[0].toLowerCase();
       var listOrDetail = methodAndListOrDetail.length > 1 ? methodAndListOrDetail[1] : 'detail';
       var path = this['getFull' + utils.upperFirst(listOrDetail) + 'Endpoint'](endpointParts[1]);
-      var handler = endpointParts.length > 2 && ! ~['skipAuthentication', 'skipAuthorization'].indexOf(endpointParts[2]) ? endpointParts[2] : endpointParts[1];
+      var handler = endpointParts.length > 2 && !~['skipAuthentication', 'skipAuthorization'].indexOf(endpointParts[2]) ? endpointParts[2] : endpointParts[1];
 
       return {
         handler: handler,
@@ -456,7 +456,7 @@ var Resource = function () {
   }, {
     key: 'getResourcePathForEndpoint',
     value: function getResourcePathForEndpoint(endpoint) {
-      var resourceUrl = undefined;
+      var resourceUrl = void 0;
 
       switch (endpoint) {
         case 'getList':
@@ -511,7 +511,7 @@ var Resource = function () {
         for (var _iterator3 = requiredFields[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
           var field = _step3.value;
 
-          if (! ~Object.keys(body).indexOf(field)) missingFields.push(field);
+          if (!~Object.keys(body).indexOf(field)) missingFields.push(field);
         }
       } catch (err) {
         _didIteratorError3 = true;
@@ -649,7 +649,7 @@ var Resource = function () {
       if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
       return model.save().then(function (model) {
-        return _this9.Model.forge(_defineProperty({}, _this9.identifierField, model.get(_this9.identifierField))).fetch(fetchOpts);
+        return _this9.Model.forge({ id: model.get('id') }).fetch(fetchOpts);
       }).then(function (model) {
         bundle.objects = model;
         return Promise.resolve(model);
@@ -696,13 +696,13 @@ var Resource = function () {
 
       if (this.fields === 'ALL') return objects;
 
-      var cleanAttrs = undefined;
+      var cleanAttrs = void 0;
       /** Given a base level resource, clean it and all related objects. */
       cleanAttrs = function cleanAttrs(attrs) {
         var cleaned = {};
-        var fieldOpts = undefined;
+        var fieldOpts = void 0;
 
-        var cleanRelated = undefined;
+        var cleanRelated = void 0;
         /** Cleans related fields that aren't resources */
         cleanRelated = function cleanRelated(related, relatedOpts) {
           if (relatedOpts.full) return related;
@@ -721,8 +721,8 @@ var Resource = function () {
             if (attrs.hasOwnProperty(field)) cleaned[field] = attrs[field];
           });
         } else {
-          var resourceName = undefined;
-          var resource = undefined;
+          var resourceName = void 0;
+          var resource = void 0;
 
           var _iteratorNormalCompletion4 = true;
           var _didIteratorError4 = false;

@@ -487,11 +487,11 @@ class Resource {
 
     if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
-    return model.save().then((updated) => {
-      return updated.fetch(fetchOpts);
-    }).then((updated) => {
-      bundle.objects = updated;
-      return Promise.resolve(updated);
+    return model.save().then((model) => {
+      return this.Model.forge({ id: model.get('id') }).fetch(fetchOpts);
+    }).then((model) => {
+      bundle.objects = model;
+      return Promise.resolve(model);
     }).catch((err) => {
       console.trace(err);
       if (err.errorMessage) return Promise.reject(err);

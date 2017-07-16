@@ -24,6 +24,7 @@ var Api = function () {
   _createClass(Api, [{
     key: 'before',
 
+
     /**
      * Install middleware that's run before all resource middleware.
      * @param  {Function} middleware - Express middleware function
@@ -88,7 +89,7 @@ var Api = function () {
 
       if (!Array.isArray(resources)) resources = [resources];
 
-      var resource = undefined;
+      var resource = void 0;
       resources.forEach(function (Resource) {
         resource = new Resource(opts);
         _this2.resources.push(resource);

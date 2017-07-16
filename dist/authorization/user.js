@@ -33,6 +33,7 @@ var UserAuthorization = function (_BaseAuthorization) {
 
   /** UserAuthorization filters the query on opts.relationIdField === req.user[opts.userIdField] */
 
+
   _createClass(UserAuthorization, [{
     key: 'preDefault',
     value: function preDefault(bundle) {

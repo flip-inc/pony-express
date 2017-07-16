@@ -27,6 +27,7 @@ var Request = function () {
 
   /** Verifies that the request URL is a valid endpoint for this.resource, otherwise respond with a 501. */
 
+
   _createClass(Request, [{
     key: 'parseEndpoint',
     value: function parseEndpoint() {
@@ -35,7 +36,7 @@ var Request = function () {
       var reqUrl = utils.removeTrailingSlashes(this.bundle.req._parsedUrl.pathname);
       var reqMethod = this.bundle.req.method.toLowerCase();
       var currentEndpoint = false;
-      var endpointRegExp = undefined;
+      var endpointRegExp = void 0;
 
       this.resource.allowedEndpoints.forEach(function (endpoint) {
         endpointRegExp = pathToRegexp(_this.resource.getResourcePathForEndpoint(endpoint));
@@ -64,14 +65,14 @@ var Request = function () {
       if (this.bundle.req.method.toLowerCase() === 'options') return this.bundle.res.sendStatus(200);
 
       // Normalize methods for custom endpoints vs regular endpoints
-      var authenticate = undefined;
-      var preAuthorize = undefined;
+      var authenticate = void 0;
+      var preAuthorize = void 0;
       var beforeAll = this.resource.beforeAll.bind(this.resource, this.bundle);
-      var beforeHandler = undefined;
-      var handler = undefined;
-      var afterHandler = undefined;
+      var beforeHandler = void 0;
+      var handler = void 0;
+      var afterHandler = void 0;
       var afterAll = this.resource.afterAll.bind(this.resource, this.bundle);
-      var authorize = undefined;
+      var authorize = void 0;
 
       // If custom endpoint
       if (utils.isObject(this.endpoint)) {
