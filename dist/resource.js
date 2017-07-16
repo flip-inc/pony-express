@@ -649,7 +649,7 @@ var Resource = function () {
       if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
       return model.save().then(function (model) {
-        return _this9.Model.forge({ id: model.get('id') }).fetch(fetchOpts);
+        return _this9.Model.forge(_defineProperty({}, _this9.identifierField, model.get(_this9.identifierField))).fetch(fetchOpts);
       }).then(function (model) {
         bundle.objects = model;
         return Promise.resolve(model);

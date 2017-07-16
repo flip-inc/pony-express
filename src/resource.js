@@ -488,7 +488,7 @@ class Resource {
     if (bundle.include.length) fetchOpts.withRelated = bundle.include;
 
     return model.save().then((model) => {
-      return this.Model.forge({ id: model.get('id') }).fetch(fetchOpts);
+      return this.Model.forge({ [this.identifierField]: model.get(this.identifierField) }).fetch(fetchOpts);
     }).then((model) => {
       bundle.objects = model;
       return Promise.resolve(model);
